@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rainbow Typing Tutor</title>
+  <style>
+    /* Global layout */
+    :root {
+      --bg: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 30%, #fbc2eb 60%, #a18cd1 100%);
+      --panel: rgba(255, 255, 255, 0.8);
+      --accent: #ff6b6b;
+      --success: #2ed573;
+      --warn: #ffa502;
+      --text: #2f3542;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Trebuchet MS', 'Comic Sans MS', system-ui, sans-serif;
+      background: var(--bg);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--text);
+    }
+
+    .game-shell {
+      width: min(1200px, 100vw);
+      min-height: 90vh;
+      background: var(--panel);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: center;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #57606f;
+    }
+
+    header .stat {
+      background: linear-gradient(135deg, #f8c291, #6a89cc);
+      color: white;
+      padding: 12px 18px;
+      border-radius: 14px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+      transform: translateY(0);
+      transition: transform 0.2s ease;
+    }
+
+    header .stat.bump {
+      transform: translateY(-6px);
+    }
+
+    .prompt-area {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #dfe4ea, #f1f2f6);
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .floating-bubbles span {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.25;
+      animation: float 14s ease-in-out infinite;
+      filter: blur(1px);
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-30px) scale(1.1); }
+      100% { transform: translateY(0) scale(1); }
+    }
+
+    .word {
+      font-size: clamp(48px, 8vw, 96px);
+      font-weight: 800;
+      color: #ff4757;
+      text-shadow: 0 8px 18px rgba(255, 71, 87, 0.4);
+      padding: 16px 32px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+      border: 6px solid transparent;
+    }
+
+    .word.pop {
+      animation: pop 0.45s ease;
+    }
+
+    .word.correct {
+      border-color: var(--success);
+      color: #1e9f5f;
+      text-shadow: 0 8px 20px rgba(46, 213, 115, 0.6);
+      animation: win 0.7s ease;
+    }
+
+    .word.wiggle {
+      animation: wiggle 0.5s;
+      border-color: #ff6b6b;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes win {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(0); }
+      25% { transform: rotate(-8deg); }
+      75% { transform: rotate(8deg); }
+    }
+
+    .input-area {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .input-area input {
+      width: min(420px, 80vw);
+      font-size: 32px;
+      padding: 16px 18px;
+      border-radius: 14px;
+      border: 3px solid #ced6e0;
+      outline: none;
+      box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.07);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .input-area input:focus {
+      border-color: #70a1ff;
+      box-shadow: 0 8px 24px rgba(112, 161, 255, 0.35);
+    }
+
+    .input-area button {
+      font-size: 18px;
+      padding: 14px 22px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #ff6b6b, #ff9ff3);
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 28px rgba(255, 107, 107, 0.3);
+      transition: transform 0.15s ease, box-shadow 0.2s;
+    }
+
+    .input-area button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px rgba(255, 107, 107, 0.35);
+    }
+
+    .input-area button:active {
+      transform: translateY(1px);
+    }
+
+    .note {
+      text-align: center;
+      color: #57606f;
+      font-weight: 600;
+      margin-top: -8px;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(47, 53, 66, 0.65);
+      display: grid;
+      place-items: center;
+      z-index: 10;
+      padding: 20px;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.25s ease, visibility 0.25s;
+    }
+
+    .overlay.show {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 28px;
+      width: min(480px, 90vw);
+      text-align: center;
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.25);
+      animation: pop 0.4s ease;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      color: #2f3542;
+      font-size: 32px;
+    }
+
+    .card p {
+      color: #57606f;
+      font-size: 18px;
+    }
+
+    .card .actions {
+      margin-top: 18px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(135deg, #1dd1a1, #10ac84);
+    }
+
+    .expert {
+      font-size: 42px;
+      color: #ff6b6b;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 14px;
+      color: #747d8c;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-shell">
+    <header>
+      <div class="stat" id="levelStat">Level 1 of 10</div>
+      <div class="stat" id="scoreStat">Score: 0</div>
+      <div class="stat" id="timeStat">Time: 60s</div>
+    </header>
+
+    <div class="prompt-area">
+      <div class="floating-bubbles" aria-hidden="true"></div>
+      <div class="word" id="word">Press Start!</div>
+    </div>
+
+    <div class="input-area">
+      <input id="answer" type="text" aria-label="Type the shown word" autocomplete="off" />
+      <button id="start">Start Level</button>
+    </div>
+    <div class="note">Type what you see above. Beat the timer and climb to Typing Expert!</div>
+
+    <footer>All in one colorful page. No downloads needed!</footer>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="card" id="overlayCard">
+      <h2 id="overlayTitle">Level Complete!</h2>
+      <p id="overlayBody">Nice typing. Ready for the next challenge?</p>
+      <div class="actions">
+        <span class="pill" id="overlayScore">Score: 0</span>
+        <button id="nextLevel">Next Level</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Data: levels and prompts -------------------------------------------------
+    const levels = [
+      { label: 'Rainbow Letters', words: ['a', 's', 'd', 'f', 'j', 'k', 'l'], goal: 8, time: 45 },
+      { label: 'Friendly Pairs', words: ['as', 'df', 'jk', 'la', 'ko', 'pe'], goal: 8, time: 45 },
+      { label: 'Three Char Pops', words: ['cat', 'sun', 'map', 'jam', 'fox', 'bee'], goal: 9, time: 45 },
+      { label: 'Mini Words', words: ['kite', 'love', 'rain', 'blue', 'play', 'jump'], goal: 10, time: 45 },
+      { label: 'Animal Parade', words: ['zebra', 'tiger', 'llama', 'bunny', 'otter'], goal: 10, time: 50 },
+      { label: 'Color Splash', words: ['violet', 'orange', 'magenta', 'turquoise', 'yellow'], goal: 10, time: 50 },
+      { label: 'Fun Actions', words: ['giggle', 'twirl', 'bounce', 'wiggle', 'sparkle'], goal: 10, time: 55 },
+      { label: 'Cozy Things', words: ['blanket', 'pajamas', 'rainbow', 'cupcake', 'marshmallow'], goal: 10, time: 55 },
+      { label: 'Brave Explorer', words: ['adventure', 'discovery', 'imagination', 'celebration'], goal: 10, time: 60 },
+      { label: 'Super Star Words', words: ['extraordinary', 'determination', 'friendliness', 'celebration time'], goal: 10, time: 60 }
+    ];
+
+    // --- State --------------------------------------------------------------------
+    let levelIndex = 0;
+    let score = 0;
+    let currentWord = '';
+    let timerId = null;
+    let timeLeft = 0;
+    let hitsThisLevel = 0;
+
+    const wordEl = document.getElementById('word');
+    const answerEl = document.getElementById('answer');
+    const startBtn = document.getElementById('start');
+    const levelStat = document.getElementById('levelStat');
+    const scoreStat = document.getElementById('scoreStat');
+    const timeStat = document.getElementById('timeStat');
+    const overlay = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlayTitle');
+    const overlayBody = document.getElementById('overlayBody');
+    const overlayScore = document.getElementById('overlayScore');
+    const nextBtn = document.getElementById('nextLevel');
+    const bubbles = document.querySelector('.floating-bubbles');
+
+    // --- Helpers ------------------------------------------------------------------
+    const pickRandom = (items) => items[Math.floor(Math.random() * items.length)];
+
+    function updateStats() {
+      levelStat.textContent = `Level ${levelIndex + 1} of ${levels.length}`;
+      scoreStat.textContent = `Score: ${score}`;
+      timeStat.textContent = `Time: ${timeLeft}s`;
+
+      // playful bump animation to draw attention
+      [levelStat, scoreStat, timeStat].forEach((node) => {
+        node.classList.remove('bump');
+        requestAnimationFrame(() => node.classList.add('bump'));
+      });
+    }
+
+    function setWord(text) {
+      currentWord = text;
+      wordEl.textContent = text;
+      wordEl.classList.remove('correct', 'wiggle');
+      wordEl.classList.add('pop');
+      setTimeout(() => wordEl.classList.remove('pop'), 400);
+    }
+
+    function startTimer() {
+      clearInterval(timerId);
+      timerId = setInterval(() => {
+        timeLeft -= 1;
+        timeStat.textContent = `Time: ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          endLevel(false);
+        }
+      }, 1000);
+    }
+
+    function startLevel() {
+      const level = levels[levelIndex];
+      hitsThisLevel = 0;
+      timeLeft = level.time;
+      updateStats();
+      setWord(pickRandom(level.words));
+      answerEl.value = '';
+      answerEl.focus();
+      startTimer();
+    }
+
+    function nextPrompt(correct) {
+      const level = levels[levelIndex];
+      // Add tiny celebration or wiggle based on correctness
+      if (correct) {
+        wordEl.classList.add('correct');
+        setTimeout(() => wordEl.classList.remove('correct'), 450);
+      } else {
+        wordEl.classList.add('wiggle');
+        setTimeout(() => wordEl.classList.remove('wiggle'), 450);
+      }
+      setTimeout(() => setWord(pickRandom(level.words)), 250);
+    }
+
+    function endLevel(fromGoal = true) {
+      clearInterval(timerId);
+      timerId = null;
+      overlay.classList.add('show');
+
+      const finalLevel = levelIndex === levels.length - 1;
+      const won = fromGoal || hitsThisLevel >= levels[levelIndex].goal;
+
+      if (finalLevel && won) {
+        overlayTitle.textContent = 'Typing Expert!';
+        overlayBody.innerHTML = 'You finished every level. That is super star typing!';
+        nextBtn.textContent = 'Play Again';
+        nextBtn.onclick = resetGame;
+      } else {
+        overlayTitle.textContent = won ? 'Level Complete!' : 'Time Up!';
+        overlayBody.textContent = won ? 'Nice typing. Ready for the next challenge?' : 'You can do it! Try the level again.';
+        nextBtn.textContent = won ? 'Next Level' : 'Retry Level';
+        nextBtn.onclick = () => {
+          overlay.classList.remove('show');
+          if (won && !finalLevel) {
+            levelIndex += 1;
+          }
+          startLevel();
+        };
+      }
+
+      overlayScore.textContent = `Score: ${score}`;
+    }
+
+    function handleInput() {
+      const level = levels[levelIndex];
+      const typed = answerEl.value.trim();
+      if (!typed) return;
+
+      if (typed.toLowerCase() === currentWord.toLowerCase()) {
+        // Correct entry
+        score += 10;
+        hitsThisLevel += 1;
+        answerEl.value = '';
+        updateStats();
+        nextPrompt(true);
+
+        if (hitsThisLevel >= level.goal) {
+          endLevel(true);
+        }
+      } else {
+        nextPrompt(false);
+      }
+    }
+
+    function resetGame() {
+      overlay.classList.remove('show');
+      levelIndex = 0;
+      score = 0;
+      startLevel();
+    }
+
+    // --- UI wiring ----------------------------------------------------------------
+    startBtn.addEventListener('click', () => {
+      overlay.classList.remove('show');
+      startLevel();
+    });
+
+    answerEl.addEventListener('input', handleInput);
+
+    // Add background bubbles for a playful feel
+    function spawnBubbles() {
+      for (let i = 0; i < 12; i += 1) {
+        const bubble = document.createElement('span');
+        const size = Math.random() * 80 + 20;
+        bubble.style.width = `${size}px`;
+        bubble.style.height = `${size}px`;
+        bubble.style.left = `${Math.random() * 100}%`;
+        bubble.style.top = `${Math.random() * 100}%`;
+        bubble.style.background = `hsla(${Math.random() * 360}, 80%, 70%, 0.6)`;
+        bubble.style.animationDelay = `${Math.random() * 6}s`;
+        bubbles.appendChild(bubble);
+      }
+    }
+
+    spawnBubbles();
+    updateStats();
+  </script>
+</body>
+</html>
