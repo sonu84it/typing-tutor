@@ -414,8 +414,16 @@
 
     function handleInput() {
       const level = levels[levelIndex];
-      const typed = answerEl.value.trim();
-      if (!typed) return;
+      const typedRaw = answerEl.value;
+      if (!typedRaw) return;
+
+      const typed = typedRaw.trim();
+      // Wait until the player types enough characters to judge the word. This
+      // prevents level three+ words from instantly swapping after the first
+      // letter is typed.
+      if (typed.length < currentWord.length) {
+        return;
+      }
 
       if (typed.toLowerCase() === currentWord.toLowerCase()) {
         // Correct entry
@@ -429,6 +437,7 @@
           endLevel(true);
         }
       } else {
+        answerEl.value = '';
         nextPrompt(false);
       }
     }
