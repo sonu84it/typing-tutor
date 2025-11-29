@@ -418,10 +418,15 @@
       if (!typedRaw) return;
 
       const typed = typedRaw.trim();
-      // Wait until the player types enough characters to judge the word. This
-      // prevents level three+ words from instantly swapping after the first
-      // letter is typed.
-      if (typed.length < currentWord.length) {
+      const targetWord = currentWord.trim();
+      // Only evaluate after the player types the final letter of the prompt.
+      // This prevents longer words (levels 4+) from swapping out the moment a
+      // single letter is entered—for example when mobile keyboards try to
+      // autocomplete after the first keystroke.
+      const hasTypedEnough = typed.length >= targetWord.length;
+      const finishedWord =
+        typed.slice(-1).toLowerCase() === targetWord.slice(-1).toLowerCase();
+      if (!hasTypedEnough || !finishedWord) {
         return;
       }
 
