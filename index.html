@@ -876,51 +876,51 @@ html&gt;body{padding:0}&lt;/style&gt;
 &lt;body&gt;
 &lt;div id=&quot;typing-quest&quot; class=&quot;typing-quest&quot;&gt;
   &lt;style&gt;
-    #typing-quest { color: var(--foreground); font-family: inherit; }
-    #typing-quest .shell { display:grid; gap:16px; padding:18px; border:1px solid var(--border); border-radius:20px; background:linear-gradient(135deg,color-mix(in srgb,var(--card) 88%,var(--accent)),var(--card)); }
+    #typing-quest { min-height:100vh; color:var(--foreground); font-family:inherit; background:radial-gradient(circle at 8% 5%,color-mix(in srgb,var(--primary) 14%,transparent),transparent 26%),radial-gradient(circle at 94% 9%,color-mix(in srgb,var(--viz-series-2) 14%,transparent),transparent 24%); }
+    #typing-quest .shell { box-sizing:border-box; min-height:100vh; display:grid; align-content:start; gap:10px; padding:12px; border:1px solid color-mix(in srgb,var(--primary) 22%,var(--border)); border-radius:18px; background:linear-gradient(145deg,color-mix(in srgb,var(--card) 85%,var(--accent)),var(--card)); }
     #typing-quest .top, #typing-quest .stats, #typing-quest .lesson-head, #typing-quest .hint { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
     #typing-quest .stats { justify-content:flex-start; }
-    #typing-quest .stat { padding:8px 11px; border-radius:999px; background:var(--secondary); color:var(--secondary-foreground); font-size:.9em; border:1px solid var(--border); }
-    #typing-quest .quest-progress { display:grid; gap:7px; }
+    #typing-quest .stat { padding:5px 8px; border-radius:999px; background:color-mix(in srgb,var(--secondary) 82%,var(--card)); color:var(--secondary-foreground); font-size:.86em; border:1px solid color-mix(in srgb,var(--border) 72%,var(--primary)); }
+    #typing-quest .quest-progress { display:grid; gap:3px; }
     #typing-quest .progress-line { display:flex; justify-content:space-between; gap:12px; color:var(--muted-foreground); font-size:.9em; }
-    #typing-quest .progress-track { height:12px; overflow:hidden; border-radius:999px; background:var(--secondary); }
+    #typing-quest .progress-track { height:8px; overflow:hidden; border-radius:999px; background:color-mix(in srgb,var(--secondary) 82%,var(--card)); }
     #typing-quest .progress-fill { height:100%; width:0%; transition:width .2s ease, background .2s ease; }
     #typing-quest .progress-fill.green { background:var(--viz-series-3); }
     #typing-quest .progress-fill.yellow { background:var(--viz-series-2); }
     #typing-quest .progress-fill.red { background:var(--destructive); }
     #typing-quest .map { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
-    #typing-quest .level { min-height:48px; padding:7px; border:1px solid var(--border); border-radius:12px; background:var(--background); color:var(--muted-foreground); font:inherit; font-weight:500; transition:transform .15s ease,background .15s ease; }
+    #typing-quest .level { min-height:40px; padding:5px; border:1px solid color-mix(in srgb,var(--border) 78%,var(--primary)); border-radius:12px; background:color-mix(in srgb,var(--background) 88%,var(--card)); color:var(--muted-foreground); font:inherit; font-weight:500; transition:transform .15s ease,background .15s ease,box-shadow .15s ease; }
     #typing-quest .level:hover { transform:translateY(-2px); }
     #typing-quest .level.done { background:color-mix(in srgb,var(--viz-series-2) 22%,var(--card)); color:var(--foreground); }
     #typing-quest .level.active { background:var(--primary); color:var(--primary-foreground); border-color:var(--primary); box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 24%,transparent); }
     #typing-quest .level:disabled { opacity:.42; }
-    #typing-quest .lesson { display:grid; gap:14px; padding:18px; border-radius:16px; background:color-mix(in srgb,var(--background) 88%,var(--accent)); border:1px solid var(--border); }
-    #typing-quest .arena { position:relative; min-height:250px; border-radius:16px; overflow:hidden; border:1px solid var(--border); background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 42%,var(--card)),var(--card)); }
-    #typing-quest .arena.word-mode { min-height:250px; padding:12px; background:var(--card); }
+    #typing-quest .lesson { display:grid; gap:8px; padding:12px; border-radius:16px; background:color-mix(in srgb,var(--background) 90%,var(--accent)); border:1px solid color-mix(in srgb,var(--border) 76%,var(--primary)); box-shadow:0 8px 22px color-mix(in srgb,var(--foreground) 6%,transparent); }
+    #typing-quest .arena { position:relative; min-height:200px; border-radius:14px; overflow:hidden; border:1px solid color-mix(in srgb,var(--primary) 26%,var(--border)); background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 44%,var(--card)),var(--card)); }
+    #typing-quest .arena.word-mode { min-height:200px; padding:8px; background:color-mix(in srgb,var(--card) 92%,var(--accent)); }
     #typing-quest .drop { position:absolute; top:10px; left:50%; transform:translateX(-50%); min-width:42px; padding:10px 12px; border-radius:10px; text-align:center; background:var(--primary); color:var(--primary-foreground); font-size:1.35em; font-weight:500; animation:fall 4.5s linear forwards; }
     #typing-quest .drop.group { letter-spacing:.09em; font-size:1.1em; }
-    @keyframes fall { from { top:10px; } to { top:190px; } }
+    @keyframes fall { from { top:10px; } to { top:150px; } }
     #typing-quest .target { min-height:66px; display:flex; flex-wrap:wrap; gap:7px; align-content:center; justify-content:center; padding:12px; }
     #typing-quest .token { padding:8px 9px; border:1px solid var(--border); border-radius:10px; background:var(--background); font-size:1.07em; }
     #typing-quest .token.bad { background:var(--destructive) !important; border-color:var(--destructive) !important; color:var(--background) !important; }
     #typing-quest .token.current { border-color:var(--primary); background:color-mix(in srgb,var(--primary) 17%,var(--background)); }
     #typing-quest .token.good { background:color-mix(in srgb,var(--viz-series-2) 20%,var(--background)); }
-    #typing-quest input { width:100%; box-sizing:border-box; padding:13px 14px; border:1px solid var(--input); border-radius:10px; background:var(--card); color:var(--card-foreground); font:inherit; font-size:1.06em; }
-    #typing-quest .history { min-height:26px; display:flex; flex-wrap:wrap; gap:5px; padding:8px 0; }
+    #typing-quest input { width:100%; box-sizing:border-box; padding:9px 11px; border:1px solid color-mix(in srgb,var(--input) 70%,var(--primary)); border-radius:11px; background:var(--card); color:var(--card-foreground); font:inherit; font-size:1em; }
+    #typing-quest .history { min-height:18px; display:flex; flex-wrap:wrap; gap:5px; padding:2px 0; }
     #typing-quest .history span { padding:3px 6px; border-radius:6px; background:var(--secondary); }
     #typing-quest .history .good { background:color-mix(in srgb,var(--viz-series-2) 28%,var(--card)); }
     #typing-quest .history .bad { background:var(--destructive) !important; color:var(--background) !important; box-shadow:0 0 0 1px var(--destructive); }
-    #typing-quest .hint { color:var(--muted-foreground); font-size:.9em; }
+    #typing-quest .hint { color:var(--muted-foreground); font-size:.82em; }
     #typing-quest .celebrate { display:none; padding:12px; border-radius:10px; background:color-mix(in srgb,var(--viz-series-2) 18%,var(--card)); }
     #typing-quest .celebrate.show { display:block; }
     #typing-quest .summary { display:none; gap:12px; padding:16px; border:1px solid var(--border); border-radius:12px; background:var(--card); }
     #typing-quest .summary.show { display:grid; }
     #typing-quest .summary p { margin:0; }
     #typing-quest #start-next, #typing-quest #retry, #typing-quest #next-level { width:max-content; border:1px solid var(--primary); border-radius:999px; background:var(--primary); color:var(--primary-foreground); font:inherit; font-weight:500; cursor:pointer; }
-    #typing-quest #start-next { justify-self:start; padding:7px 14px; font-size:.92em; box-shadow:0 3px 0 color-mix(in srgb,var(--primary) 45%,var(--border)); }
+    #typing-quest #start-next { justify-self:start; padding:8px 18px; font-size:.92em; box-shadow:0 4px 0 color-mix(in srgb,var(--primary) 45%,var(--border)),0 8px 12px color-mix(in srgb,var(--primary) 20%,transparent); }
     #typing-quest #retry, #typing-quest #next-level { padding:9px 15px; }
     #typing-quest #start-next:hover, #typing-quest #retry:hover, #typing-quest #next-level:hover { filter:brightness(1.08); transform:translateY(-1px); }
-    @media (max-width:460px) { #typing-quest .shell { padding:13px; } #typing-quest .map { gap:4px; } #typing-quest .level { min-height:44px; border-radius:8px; font-size:.72em; } }
+    @media (max-width:460px) { #typing-quest .shell { padding:9px; gap:8px; } #typing-quest .map { gap:4px; } #typing-quest .level { min-height:36px; border-radius:8px; font-size:.68em; } #typing-quest .arena, #typing-quest .arena.word-mode { min-height:120px; } }
   &lt;/style&gt;
   &lt;section class=&quot;shell&quot; aria-label=&quot;Typing Quest learning game&quot;&gt;
       &lt;div class=&quot;top&quot;&gt;&lt;div&gt;&lt;strong id=&quot;chapter-title&quot;&gt;&lt;/strong&gt;&lt;div class=&quot;text-small&quot; id=&quot;chapter-subtitle&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;stats&quot;&gt;&lt;label class=&quot;stat&quot;&gt;Practice &lt;select id=&quot;session-select&quot; aria-label=&quot;Practice variation&quot;&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;stat&quot;&gt;Difficulty &lt;select id=&quot;difficulty-select&quot; aria-label=&quot;Difficulty&quot;&gt;&lt;option&gt;Easy&lt;/option&gt;&lt;option selected&gt;Medium&lt;/option&gt;&lt;option&gt;Hard&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;span class=&quot;stat&quot; id=&quot;stars&quot;&gt;Live score 0&lt;/span&gt;&lt;span class=&quot;stat&quot; id=&quot;accuracy&quot;&gt;Accuracy —&lt;/span&gt;&lt;span class=&quot;stat&quot; id=&quot;wpm&quot; hidden&gt;WPM 0&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;
