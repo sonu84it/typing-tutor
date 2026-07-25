@@ -1,484 +1,1230 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rainbow Typing Tutor</title>
-  <style>
-    /* Global layout */
-    :root {
-      --bg: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 30%, #fbc2eb 60%, #a18cd1 100%);
-      --panel: rgba(255, 255, 255, 0.8);
-      --accent: #ff6b6b;
-      --success: #2ed573;
-      --warn: #ffa502;
-      --text: #2f3542;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: 'Trebuchet MS', 'Comic Sans MS', system-ui, sans-serif;
-      background: var(--bg);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: var(--text);
-    }
-
-    .game-shell {
-      width: min(1200px, 100vw);
-      min-height: 90vh;
-      background: var(--panel);
-      border-radius: 24px;
-      padding: 32px;
-      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.15);
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    header {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      align-items: center;
-      text-align: center;
-      font-size: 1.2rem;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      color: #57606f;
-    }
-
-    header .stat {
-      background: linear-gradient(135deg, #f8c291, #6a89cc);
-      color: white;
-      padding: 12px 18px;
-      border-radius: 14px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
-      transform: translateY(0);
-      transition: transform 0.2s ease;
-    }
-
-    header .stat.bump {
-      transform: translateY(-6px);
-    }
-
-    .prompt-area {
-      flex: 1;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, #dfe4ea, #f1f2f6);
-      border-radius: 20px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .floating-bubbles span {
-      position: absolute;
-      border-radius: 50%;
-      opacity: 0.25;
-      animation: float 14s ease-in-out infinite;
-      filter: blur(1px);
-    }
-
-    @keyframes float {
-      0% { transform: translateY(0) scale(1); }
-      50% { transform: translateY(-30px) scale(1.1); }
-      100% { transform: translateY(0) scale(1); }
-    }
-
-    .word {
-      font-size: clamp(48px, 8vw, 96px);
-      font-weight: 800;
-      color: #ff4757;
-      text-shadow: 0 8px 18px rgba(255, 71, 87, 0.4);
-      padding: 16px 32px;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
-      border: 6px solid transparent;
-    }
-
-    .word.pop {
-      animation: pop 0.45s ease;
-    }
-
-    .word.correct {
-      border-color: var(--success);
-      color: #1e9f5f;
-      text-shadow: 0 8px 20px rgba(46, 213, 115, 0.6);
-      animation: win 0.7s ease;
-    }
-
-    .word.wiggle {
-      animation: wiggle 0.5s;
-      border-color: #ff6b6b;
-    }
-
-    @keyframes pop {
-      0% { transform: scale(0.7); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-
-    @keyframes win {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.12); }
-      100% { transform: scale(1); }
-    }
-
-    @keyframes wiggle {
-      0%, 100% { transform: rotate(0); }
-      25% { transform: rotate(-8deg); }
-      75% { transform: rotate(8deg); }
-    }
-
-    .input-area {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .input-area input {
-      width: min(420px, 80vw);
-      font-size: 32px;
-      padding: 16px 18px;
-      border-radius: 14px;
-      border: 3px solid #ced6e0;
-      outline: none;
-      box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.07);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .input-area input:focus {
-      border-color: #70a1ff;
-      box-shadow: 0 8px 24px rgba(112, 161, 255, 0.35);
-    }
-
-    .input-area button {
-      font-size: 18px;
-      padding: 14px 22px;
-      border-radius: 12px;
-      border: none;
-      background: linear-gradient(135deg, #ff6b6b, #ff9ff3);
-      color: white;
-      font-weight: 800;
-      cursor: pointer;
-      box-shadow: 0 10px 28px rgba(255, 107, 107, 0.3);
-      transition: transform 0.15s ease, box-shadow 0.2s;
-    }
-
-    .input-area button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 16px 36px rgba(255, 107, 107, 0.35);
-    }
-
-    .input-area button:active {
-      transform: translateY(1px);
-    }
-
-    .note {
-      text-align: center;
-      color: #57606f;
-      font-weight: 600;
-      margin-top: -8px;
-    }
-
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(47, 53, 66, 0.65);
-      display: grid;
-      place-items: center;
-      z-index: 10;
-      padding: 20px;
-      visibility: hidden;
-      opacity: 0;
-      transition: opacity 0.25s ease, visibility 0.25s;
-    }
-
-    .overlay.show {
-      visibility: visible;
-      opacity: 1;
-    }
-
-    .card {
-      background: white;
-      border-radius: 20px;
-      padding: 28px;
-      width: min(480px, 90vw);
-      text-align: center;
-      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.25);
-      animation: pop 0.4s ease;
-    }
-
-    .card h2 {
-      margin-top: 0;
-      color: #2f3542;
-      font-size: 32px;
-    }
-
-    .card p {
-      color: #57606f;
-      font-size: 18px;
-    }
-
-    .card .actions {
-      margin-top: 18px;
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .pill {
-      padding: 10px 16px;
-      border-radius: 999px;
-      font-weight: 700;
-      color: white;
-      background: linear-gradient(135deg, #1dd1a1, #10ac84);
-    }
-
-    .expert {
-      font-size: 42px;
-      color: #ff6b6b;
-    }
-
-    footer {
-      text-align: center;
-      font-size: 14px;
-      color: #747d8c;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'unsafe-inline' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Typing Quest</title>
+<style>:root{color-scheme:light dark;background:light-dark(rgb(255 255 255), rgb(24 24 24))}html,body{margin:0}body{box-sizing:border-box;padding:1rem;background:inherit}iframe{display:block;width:100%;height:calc(100vh - 2rem);margin:0 auto;border:0}</style>
 </head>
 <body>
-  <div class="game-shell">
-    <header>
-      <div class="stat" id="levelStat">Level 1 of 10</div>
-      <div class="stat" id="scoreStat">Score: 0</div>
-      <div class="stat" id="timeStat">Time: 60s</div>
-    </header>
+<iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="Typing Quest" srcdoc="&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;meta name=&quot;referrer&quot; content=&quot;no-referrer&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; script-src &#x27;unsafe-inline&#x27; &#x27;unsafe-eval&#x27; &#x27;wasm-unsafe-eval&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src &#x27;unsafe-inline&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;&quot;&gt;
+&lt;title&gt;Typing Quest&lt;/title&gt;
+&lt;style&gt;:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
 
-    <div class="prompt-area">
-      <div class="floating-bubbles" aria-hidden="true"></div>
-      <div class="word" id="word">Press Start!</div>
-    </div>
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 14px);
+  --red: light-dark(rgb(186 38 35), rgb(250 66 62));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
 
-    <div class="input-area">
-      <input id="answer" type="text" aria-label="Type the shown word" autocomplete="off" />
-      <button id="start">Start Level</button>
-    </div>
-    <div class="note">Type what you see above. Beat the timer and climb to Typing Expert!</div>
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, &quot;Segoe UI&quot;, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;,
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --radius: var(--border-radius-lg, 12.5px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url(&quot;data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 17 17&#x27;%3E%3Cpath d=&#x27;M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z&#x27;/%3E%3C/svg%3E&quot;);
 
-    <footer>All in one colorful page. No downloads needed!</footer>
-  </div>
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
 
-  <div class="overlay" id="overlay">
-    <div class="card" id="overlayCard">
-      <h2 id="overlayTitle">Level Complete!</h2>
-      <p id="overlayBody">Nice typing. Ready for the next challenge?</p>
-      <div class="actions">
-        <span class="pill" id="overlayScore">Score: 0</span>
-        <button id="nextLevel">Next Level</button>
-      </div>
-    </div>
-  </div>
+:root[data-theme=&quot;light&quot;] {
+  color-scheme: light;
+}
 
-  <script>
-    // --- Data: levels and prompts -------------------------------------------------
-    const levels = [
-      { label: 'Rainbow Letters', words: ['a', 's', 'd', 'f', 'j', 'k', 'l'], goal: 8, time: 45 },
-      { label: 'Friendly Pairs', words: ['as', 'df', 'jk', 'la', 'ko', 'pe'], goal: 8, time: 45 },
-      { label: 'Three Char Pops', words: ['cat', 'sun', 'map', 'jam', 'fox', 'bee'], goal: 9, time: 45 },
-      { label: 'Mini Words', words: ['kite', 'love', 'rain', 'blue', 'play', 'jump'], goal: 10, time: 45 },
-      { label: 'Animal Parade', words: ['zebra', 'tiger', 'llama', 'bunny', 'otter'], goal: 10, time: 50 },
-      { label: 'Color Splash', words: ['violet', 'orange', 'magenta', 'turquoise', 'yellow'], goal: 10, time: 50 },
-      { label: 'Fun Actions', words: ['giggle', 'twirl', 'bounce', 'wiggle', 'sparkle'], goal: 10, time: 55 },
-      { label: 'Cozy Things', words: ['blanket', 'pajamas', 'rainbow', 'cupcake', 'marshmallow'], goal: 10, time: 55 },
-      { label: 'Brave Explorer', words: ['adventure', 'discovery', 'imagination', 'celebration'], goal: 10, time: 60 },
-      { label: 'Super Star Words', words: ['extraordinary', 'determination', 'friendliness', 'celebration time'], goal: 10, time: 60 }
-    ];
+:root[data-theme=&quot;dark&quot;] {
+  color-scheme: dark;
+}
 
-    // --- State --------------------------------------------------------------------
-    let levelIndex = 0;
-    let score = 0;
-    let currentWord = '';
-    let timerId = null;
-    let timeLeft = 0;
-    let hitsThisLevel = 0;
+* {
+  box-sizing: border-box;
+}
 
-    const wordEl = document.getElementById('word');
-    const answerEl = document.getElementById('answer');
-    const startBtn = document.getElementById('start');
-    const levelStat = document.getElementById('levelStat');
-    const scoreStat = document.getElementById('scoreStat');
-    const timeStat = document.getElementById('timeStat');
-    const overlay = document.getElementById('overlay');
-    const overlayTitle = document.getElementById('overlayTitle');
-    const overlayBody = document.getElementById('overlayBody');
-    const overlayScore = document.getElementById('overlayScore');
-    const nextBtn = document.getElementById('nextLevel');
-    const bubbles = document.querySelector('.floating-bubbles');
+html &gt; body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
 
-    // --- Helpers ------------------------------------------------------------------
-    const pickRandom = (items) => items[Math.floor(Math.random() * items.length)];
+  margin: 0;
+  padding: 5px;
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
 
-    function updateStats() {
-      levelStat.textContent = `Level ${levelIndex + 1} of ${levels.length}`;
-      scoreStat.textContent = `Score: ${score}`;
-      timeStat.textContent = `Time: ${timeLeft}s`;
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium, 500);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
 
-      // playful bump animation to draw attention
-      [levelStat, scoreStat, timeStat].forEach((node) => {
-        node.classList.remove('bump');
-        requestAnimationFrame(() => node.classList.add('bump'));
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive &gt; .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align=&quot;right&quot;]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align=&quot;center&quot;]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: superellipse(1.5);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget &gt; :not(.card) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls &gt; .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls &gt; .form-label &gt; :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type=&quot;file&quot;] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type=&quot;file&quot;]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type=&quot;file&quot;]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type=&quot;color&quot;] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: superellipse(1.5);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: &quot;&quot;;
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type=&quot;radio&quot;] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type=&quot;radio&quot;]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: &quot;&quot;;
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+    [aria-pressed=&quot;true&quot;],
+    [aria-selected=&quot;true&quot;],
+    .is-selected
+  ) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed=&quot;true&quot;], [aria-selected=&quot;true&quot;], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget &gt; svg {
+  width: 100%;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html&gt;body{padding:0}&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id=&quot;typing-quest&quot; class=&quot;typing-quest&quot;&gt;
+  &lt;style&gt;
+    #typing-quest { color: var(--foreground); font-family: inherit; }
+    #typing-quest .shell { display:grid; gap:16px; padding:18px; border:1px solid var(--border); border-radius:20px; background:linear-gradient(135deg,color-mix(in srgb,var(--card) 88%,var(--accent)),var(--card)); }
+    #typing-quest .top, #typing-quest .stats, #typing-quest .lesson-head, #typing-quest .hint { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    #typing-quest .stats { justify-content:flex-start; }
+    #typing-quest .stat { padding:8px 11px; border-radius:999px; background:var(--secondary); color:var(--secondary-foreground); font-size:.9em; border:1px solid var(--border); }
+    #typing-quest .quest-progress { display:grid; gap:7px; }
+    #typing-quest .progress-line { display:flex; justify-content:space-between; gap:12px; color:var(--muted-foreground); font-size:.9em; }
+    #typing-quest .progress-track { height:12px; overflow:hidden; border-radius:999px; background:var(--secondary); }
+    #typing-quest .progress-fill { height:100%; width:0%; transition:width .2s ease, background .2s ease; }
+    #typing-quest .progress-fill.green { background:var(--viz-series-3); }
+    #typing-quest .progress-fill.yellow { background:var(--viz-series-2); }
+    #typing-quest .progress-fill.red { background:var(--destructive); }
+    #typing-quest .map { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+    #typing-quest .level { min-height:48px; padding:7px; border:1px solid var(--border); border-radius:12px; background:var(--background); color:var(--muted-foreground); font:inherit; font-weight:500; transition:transform .15s ease,background .15s ease; }
+    #typing-quest .level:hover { transform:translateY(-2px); }
+    #typing-quest .level.done { background:color-mix(in srgb,var(--viz-series-2) 22%,var(--card)); color:var(--foreground); }
+    #typing-quest .level.active { background:var(--primary); color:var(--primary-foreground); border-color:var(--primary); box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 24%,transparent); }
+    #typing-quest .level:disabled { opacity:.42; }
+    #typing-quest .lesson { display:grid; gap:14px; padding:18px; border-radius:16px; background:color-mix(in srgb,var(--background) 88%,var(--accent)); border:1px solid var(--border); }
+    #typing-quest .arena { position:relative; min-height:250px; border-radius:16px; overflow:hidden; border:1px solid var(--border); background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 42%,var(--card)),var(--card)); }
+    #typing-quest .arena.word-mode { min-height:250px; padding:12px; background:var(--card); }
+    #typing-quest .drop { position:absolute; top:10px; left:50%; transform:translateX(-50%); min-width:42px; padding:10px 12px; border-radius:10px; text-align:center; background:var(--primary); color:var(--primary-foreground); font-size:1.35em; font-weight:500; animation:fall 4.5s linear forwards; }
+    #typing-quest .drop.group { letter-spacing:.09em; font-size:1.1em; }
+    @keyframes fall { from { top:10px; } to { top:190px; } }
+    #typing-quest .target { min-height:66px; display:flex; flex-wrap:wrap; gap:7px; align-content:center; justify-content:center; padding:12px; }
+    #typing-quest .token { padding:8px 9px; border:1px solid var(--border); border-radius:10px; background:var(--background); font-size:1.07em; }
+    #typing-quest .token.bad { background:var(--destructive) !important; border-color:var(--destructive) !important; color:var(--background) !important; }
+    #typing-quest .token.current { border-color:var(--primary); background:color-mix(in srgb,var(--primary) 17%,var(--background)); }
+    #typing-quest .token.good { background:color-mix(in srgb,var(--viz-series-2) 20%,var(--background)); }
+    #typing-quest input { width:100%; box-sizing:border-box; padding:13px 14px; border:1px solid var(--input); border-radius:10px; background:var(--card); color:var(--card-foreground); font:inherit; font-size:1.06em; }
+    #typing-quest .history { min-height:26px; display:flex; flex-wrap:wrap; gap:5px; padding:8px 0; }
+    #typing-quest .history span { padding:3px 6px; border-radius:6px; background:var(--secondary); }
+    #typing-quest .history .good { background:color-mix(in srgb,var(--viz-series-2) 28%,var(--card)); }
+    #typing-quest .history .bad { background:var(--destructive) !important; color:var(--background) !important; box-shadow:0 0 0 1px var(--destructive); }
+    #typing-quest .hint { color:var(--muted-foreground); font-size:.9em; }
+    #typing-quest .celebrate { display:none; padding:12px; border-radius:10px; background:color-mix(in srgb,var(--viz-series-2) 18%,var(--card)); }
+    #typing-quest .celebrate.show { display:block; }
+    #typing-quest .summary { display:none; gap:12px; padding:16px; border:1px solid var(--border); border-radius:12px; background:var(--card); }
+    #typing-quest .summary.show { display:grid; }
+    #typing-quest .summary p { margin:0; }
+    #typing-quest #start-next, #typing-quest #retry, #typing-quest #next-level { width:max-content; border:1px solid var(--primary); border-radius:999px; background:var(--primary); color:var(--primary-foreground); font:inherit; font-weight:500; cursor:pointer; }
+    #typing-quest #start-next { justify-self:start; padding:7px 14px; font-size:.92em; box-shadow:0 3px 0 color-mix(in srgb,var(--primary) 45%,var(--border)); }
+    #typing-quest #retry, #typing-quest #next-level { padding:9px 15px; }
+    #typing-quest #start-next:hover, #typing-quest #retry:hover, #typing-quest #next-level:hover { filter:brightness(1.08); transform:translateY(-1px); }
+    @media (max-width:460px) { #typing-quest .shell { padding:13px; } #typing-quest .map { gap:4px; } #typing-quest .level { min-height:44px; border-radius:8px; font-size:.72em; } }
+  &lt;/style&gt;
+  &lt;section class=&quot;shell&quot; aria-label=&quot;Typing Quest learning game&quot;&gt;
+      &lt;div class=&quot;top&quot;&gt;&lt;div&gt;&lt;strong id=&quot;chapter-title&quot;&gt;&lt;/strong&gt;&lt;div class=&quot;text-small&quot; id=&quot;chapter-subtitle&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;stats&quot;&gt;&lt;label class=&quot;stat&quot;&gt;Practice &lt;select id=&quot;session-select&quot; aria-label=&quot;Practice variation&quot;&gt;&lt;/select&gt;&lt;/label&gt;&lt;label class=&quot;stat&quot;&gt;Difficulty &lt;select id=&quot;difficulty-select&quot; aria-label=&quot;Difficulty&quot;&gt;&lt;option&gt;Easy&lt;/option&gt;&lt;option selected&gt;Medium&lt;/option&gt;&lt;option&gt;Hard&lt;/option&gt;&lt;/select&gt;&lt;/label&gt;&lt;span class=&quot;stat&quot; id=&quot;stars&quot;&gt;Live score 0&lt;/span&gt;&lt;span class=&quot;stat&quot; id=&quot;accuracy&quot;&gt;Accuracy —&lt;/span&gt;&lt;span class=&quot;stat&quot; id=&quot;wpm&quot; hidden&gt;WPM 0&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;
+    &lt;div class=&quot;map&quot; id=&quot;level-map&quot; aria-label=&quot;Ten typing chapters&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;quest-progress&quot; aria-label=&quot;Chapter progress&quot;&gt;&lt;div class=&quot;progress-line&quot;&gt;&lt;span&gt;Chapter progress&lt;/span&gt;&lt;span id=&quot;quest-percent&quot;&gt;0% complete&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;progress-track&quot;&gt;&lt;div class=&quot;progress-fill&quot; id=&quot;quest-fill&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;progress-line&quot;&gt;&lt;span&gt;Time used&lt;/span&gt;&lt;span id=&quot;time-percent&quot;&gt;0s used&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;progress-track&quot;&gt;&lt;div class=&quot;progress-fill green&quot; id=&quot;time-fill&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;progress-line&quot;&gt;&lt;span id=&quot;pace-label&quot;&gt;Pace: ready to start&lt;/span&gt;&lt;span id=&quot;round-percent&quot;&gt;0% of chapter goal&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;
+    &lt;div class=&quot;lesson&quot;&gt;
+      &lt;div class=&quot;lesson-head&quot;&gt;&lt;strong id=&quot;mission&quot;&gt;&lt;/strong&gt;&lt;span class=&quot;text-small&quot; id=&quot;progress&quot;&gt;&lt;/span&gt;&lt;/div&gt;
+      &lt;div class=&quot;arena&quot; id=&quot;arena&quot; aria-live=&quot;polite&quot;&gt;&lt;div class=&quot;target&quot; id=&quot;target&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+      &lt;div class=&quot;text-small&quot;&gt;Your typing: green is correct; red marks a mistake.&lt;/div&gt;
+      &lt;div class=&quot;history&quot; id=&quot;typing-history&quot; aria-live=&quot;polite&quot; aria-label=&quot;Your typed characters&quot;&gt;&lt;/div&gt;
+      &lt;input id=&quot;typing-input&quot; autocomplete=&quot;off&quot; autocapitalize=&quot;off&quot; spellcheck=&quot;false&quot; aria-label=&quot;Type the displayed practice&quot; placeholder=&quot;Start typing here…&quot;&gt;
+      &lt;div class=&quot;hint&quot;&gt;&lt;span id=&quot;instruction&quot;&gt;&lt;/span&gt;&lt;span id=&quot;tip&quot;&gt;Lowercase letters only&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;celebrate&quot; id=&quot;celebrate&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;&lt;button id=&quot;start-next&quot; type=&quot;button&quot; hidden&gt;Start level&lt;/button&gt;&lt;button id=&quot;retry&quot; type=&quot;button&quot; hidden&gt;Try this level again&lt;/button&gt;
+      &lt;div class=&quot;summary&quot; id=&quot;level-summary&quot; role=&quot;status&quot;&gt;&lt;strong id=&quot;summary-title&quot;&gt;&lt;/strong&gt;&lt;p id=&quot;summary-stats&quot;&gt;&lt;/p&gt;&lt;button id=&quot;next-level&quot; type=&quot;button&quot;&gt;Continue to next chapter&lt;/button&gt;&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+  &lt;script&gt;
+    (() =&gt; {
+      const root = document.getElementById(&#x27;typing-quest&#x27;);
+      const lessons = [
+        {name:&#x27;Key Garden&#x27;, sessions:[
+          {label:&#x27;Seed letters&#x27;,type:&#x27;drop&#x27;,copy:&#x27;Catch gentle home-row letters.&#x27;,pool:&#x27;asdfjkl;&#x27;}, {label:&#x27;Leaf letters&#x27;,type:&#x27;drop&#x27;,copy:&#x27;Catch a wider set of keys.&#x27;,pool:&#x27;qwertyuiop&#x27;}, {label:&#x27;Root letters&#x27;,type:&#x27;drop&#x27;,copy:&#x27;Practice bottom-row keys.&#x27;,pool:&#x27;zxcvbnm&#x27;}, {label:&#x27;Garden mix&#x27;,type:&#x27;drop&#x27;,copy:&#x27;Mix your home-row rhythm.&#x27;,pool:&#x27;asdfghjkl&#x27;}, {label:&#x27;Rainbow keys&#x27;,type:&#x27;drop&#x27;,copy:&#x27;Catch letters from every row.&#x27;,pool:&#x27;qazwsxedcrfvtgbyhnujm&#x27;}]},
+        {name:&#x27;Pattern Playground&#x27;, sessions:[
+          {label:&#x27;Pairs&#x27;,type:&#x27;drop&#x27;,copy:&#x27;Catch two-letter patterns.&#x27;,pool:[&#x27;as&#x27;,&#x27;df&#x27;,&#x27;jk&#x27;,&#x27;kl&#x27;,&#x27;qw&#x27;,&#x27;er&#x27;]}, {label:&#x27;Triples&#x27;,type:&#x27;drop&#x27;,copy:&#x27;Catch three-letter patterns.&#x27;,pool:[&#x27;asd&#x27;,&#x27;fgh&#x27;,&#x27;jkl&#x27;,&#x27;qwe&#x27;,&#x27;rty&#x27;]}, {label:&#x27;Zigzags&#x27;,type:&#x27;drop&#x27;,copy:&#x27;Practice changing hands.&#x27;,pool:[&#x27;az&#x27;,&#x27;sx&#x27;,&#x27;dc&#x27;,&#x27;fv&#x27;,&#x27;jh&#x27;,&#x27;kn&#x27;]}, {label:&#x27;Top-row trails&#x27;,type:&#x27;drop&#x27;,copy:&#x27;Follow top-row patterns.&#x27;,pool:[&#x27;qwe&#x27;,&#x27;ert&#x27;,&#x27;tyu&#x27;,&#x27;uio&#x27;,&#x27;iop&#x27;]}, {label:&#x27;Quick combos&#x27;,type:&#x27;drop&#x27;,copy:&#x27;Catch lively key combinations.&#x27;,pool:[&#x27;cat&#x27;,&#x27;sun&#x27;,&#x27;map&#x27;,&#x27;run&#x27;,&#x27;tap&#x27;]}]},
+        {name:&#x27;Word Workshop&#x27;, sessions:[
+          {label:&#x27;Tiny words&#x27;,type:&#x27;text&#x27;,copy:&#x27;Build word confidence.&#x27;,text:{easy:&#x27;cat sun map dog&#x27;,medium:&#x27;cat sun map dog cup hat&#x27;,hard:&#x27;swift bright cloud fresh&#x27;}} , {label:&#x27;Action words&#x27;,type:&#x27;text&#x27;,copy:&#x27;Type useful action words.&#x27;,text:{easy:&#x27;run hop clap&#x27;,medium:&#x27;run hop clap type learn&#x27;,hard:&#x27;create explore discover&#x27;}} , {label:&#x27;Nature words&#x27;,type:&#x27;text&#x27;,copy:&#x27;Practice calm nature words.&#x27;,text:{easy:&#x27;tree bird rain&#x27;,medium:&#x27;tree bird rain flower river&#x27;,hard:&#x27;meadow thunder rainbow&#x27;}} , {label:&#x27;School words&#x27;,type:&#x27;text&#x27;,copy:&#x27;Practice everyday learning words.&#x27;,text:{easy:&#x27;book pen class&#x27;,medium:&#x27;book pen class lesson answer&#x27;,hard:&#x27;knowledge curious practice&#x27;}} , {label:&#x27;Speed words&#x27;,type:&#x27;text&#x27;,copy:&#x27;Keep a steady rhythm.&#x27;,text:{easy:&#x27;fast slow kind&#x27;,medium:&#x27;fast slow kind focus ready&#x27;,hard:&#x27;accurate confident keyboard&#x27;}} ]},
+        {name:&#x27;Sentence Safari&#x27;, sessions:[
+          {label:&#x27;Kind words&#x27;,type:&#x27;text&#x27;,copy:&#x27;Use spaces and punctuation.&#x27;,text:{easy:&#x27;I am kind.&#x27;,medium:&#x27;I can type with care.&#x27;,hard:&#x27;I can type every sentence with calm focus.&#x27;}} , {label:&#x27;Small wins&#x27;,type:&#x27;text&#x27;,copy:&#x27;Build a smooth sentence flow.&#x27;,text:{easy:&#x27;I can learn.&#x27;,medium:&#x27;My fingers know the keys.&#x27;,hard:&#x27;My fingers move smoothly across the keyboard.&#x27;}} , {label:&#x27;Nature walk&#x27;,type:&#x27;text&#x27;,copy:&#x27;Follow the sentence trail.&#x27;,text:{easy:&#x27;Birds can fly.&#x27;,medium:&#x27;Bright birds fly over trees.&#x27;,hard:&#x27;Bright birds fly quietly over the tall trees.&#x27;}} , {label:&#x27;Study time&#x27;,type:&#x27;text&#x27;,copy:&#x27;Practice clear everyday writing.&#x27;,text:{easy:&#x27;I read books.&#x27;,medium:&#x27;I read books every day.&#x27;,hard:&#x27;I read helpful books every single day.&#x27;}} , {label:&#x27;Brave typing&#x27;,type:&#x27;text&#x27;,copy:&#x27;Finish strong and steady.&#x27;,text:{easy:&#x27;I feel brave.&#x27;,medium:&#x27;I feel brave when I type.&#x27;,hard:&#x27;I feel brave when I type with patience.&#x27;}} ]},
+        {name:&#x27;Story Summit&#x27;, sessions:[
+          {label:&#x27;Morning story&#x27;,type:&#x27;text&#x27;,copy:&#x27;Write a short paragraph.&#x27;,text:{easy:&#x27;I wake up and smile.&#x27;,medium:&#x27;I wake up, stretch, and begin my day.&#x27;,hard:&#x27;I wake up, stretch, and begin my day with a bright smile.&#x27;}} , {label:&#x27;Learning story&#x27;,type:&#x27;text&#x27;,copy:&#x27;Keep your rhythm through a paragraph.&#x27;,text:{easy:&#x27;I practice typing.&#x27;,medium:&#x27;I practice typing a little every day.&#x27;,hard:&#x27;I practice typing a little every day, and my hands grow stronger.&#x27;}} , {label:&#x27;Adventure story&#x27;,type:&#x27;text&#x27;,copy:&#x27;Climb the final mountain.&#x27;,text:{easy:&#x27;I explore new places.&#x27;,medium:&#x27;I explore new places with my friends.&#x27;,hard:&#x27;I explore new places with my friends and share what I learn.&#x27;}} , {label:&#x27;Dream story&#x27;,type:&#x27;text&#x27;,copy:&#x27;Write with imagination.&#x27;,text:{easy:&#x27;I have big dreams.&#x27;,medium:&#x27;I have big dreams for my future.&#x27;,hard:&#x27;I have big dreams, and I work patiently toward them.&#x27;}} , {label:&#x27;Champion story&#x27;,type:&#x27;text&#x27;,copy:&#x27;Complete the final practice.&#x27;,text:{easy:&#x27;I am a typing star.&#x27;,medium:&#x27;I am a typing star who keeps trying.&#x27;,hard:&#x27;I am a typing star who keeps trying, learning, and improving.&#x27;}} ]}
+      ];
+      const e = { ...Object.fromEntries([&#x27;map&#x27;,&#x27;chapter-title&#x27;,&#x27;chapter-subtitle&#x27;,&#x27;mission&#x27;,&#x27;arena&#x27;,&#x27;target&#x27;,&#x27;typing-input&#x27;,&#x27;typing-history&#x27;,&#x27;progress&#x27;,&#x27;accuracy&#x27;,&#x27;stars&#x27;,&#x27;wpm&#x27;,&#x27;celebrate&#x27;,&#x27;instruction&#x27;,&#x27;tip&#x27;,&#x27;start-next&#x27;,&#x27;retry&#x27;,&#x27;quest-percent&#x27;,&#x27;quest-fill&#x27;,&#x27;time-percent&#x27;,&#x27;time-fill&#x27;,&#x27;pace-label&#x27;,&#x27;round-percent&#x27;,&#x27;level-summary&#x27;,&#x27;summary-title&#x27;,&#x27;summary-stats&#x27;,&#x27;next-level&#x27;,&#x27;session-select&#x27;,&#x27;difficulty-select&#x27;].map(id=&gt;[id,root.querySelector(&#x27;#&#x27;+id)])), map: root.querySelector(&#x27;#level-map&#x27;), input: root.querySelector(&#x27;#typing-input&#x27;), history: root.querySelector(&#x27;#typing-history&#x27;), start: root.querySelector(&#x27;#start-next&#x27;), questFill: root.querySelector(&#x27;#quest-fill&#x27;), questPercent: root.querySelector(&#x27;#quest-percent&#x27;), timeFill: root.querySelector(&#x27;#time-fill&#x27;), timePercent: root.querySelector(&#x27;#time-percent&#x27;), pace: root.querySelector(&#x27;#pace-label&#x27;), roundPercent: root.querySelector(&#x27;#round-percent&#x27;), summary: root.querySelector(&#x27;#level-summary&#x27;), summaryTitle: root.querySelector(&#x27;#summary-title&#x27;), summaryStats: root.querySelector(&#x27;#summary-stats&#x27;), next: root.querySelector(&#x27;#next-level&#x27;), session: root.querySelector(&#x27;#session-select&#x27;), difficulty: root.querySelector(&#x27;#difficulty-select&#x27;) };
+      let level=0, session=0, unlocked=0, points=0, correct=0, errors=0, text=&#x27;&#x27;, typed=&#x27;&#x27;, falling=&#x27;&#x27;, dropTimer=null, roundTimer=null, dropCount=0, timeLeft=0, roundDuration=0, goal=0, history=[], wrongPositions=new Set(), done=false, waitingToStart=false, questDone=false, roundStarted=0;
+      const practice=()=&gt;lessons[level].sessions[session];
+      const isDrop=()=&gt;practice().type===&#x27;drop&#x27;;
+      const pick=()=&gt;{ const pool=practice().pool; return typeof pool===&#x27;string&#x27; ? pool[Math.floor(Math.random()*pool.length)] : pool[Math.floor(Math.random()*pool.length)]; };
+      function map(){ e.map.innerHTML=lessons.map((x,i)=&gt;`&lt;button class=&quot;level ${i&lt;level?&#x27;done&#x27;:&#x27;&#x27;} ${i===level?&#x27;active&#x27;:&#x27;&#x27;}&quot; aria-label=&quot;Chapter ${i+1}: ${x.name}&quot;&gt;${x.name}&lt;/button&gt;`).join(&#x27;&#x27;); [...e.map.children].forEach((b,i)=&gt;b.addEventListener(&#x27;click&#x27;,()=&gt;{level=i;session=0;load(i,true)})); }
+      function tokens(){ const unit=isDrop()?falling:text; const chars=[...unit]; e.target.innerHTML=chars.map((c,i)=&gt;`&lt;span class=&quot;token ${!isDrop()&amp;&amp;i&lt;typed.length?&#x27;good&#x27;:&#x27;&#x27;} ${!isDrop()&amp;&amp;wrongPositions.has(i)?&#x27;bad&#x27;:&#x27;&#x27;} ${(!isDrop()&amp;&amp;i===typed.length)?&#x27;current&#x27;:&#x27;&#x27;}&quot;&gt;${c===&#x27; &#x27;?&#x27;␣&#x27;:c}&lt;/span&gt;`).join(&#x27;&#x27;); }
+      function currentWpm(){ const words=typed.trim()?typed.trim().split(/\s+/).length:0; const minutes=roundStarted?(Date.now()-roundStarted)/60000:0; return minutes&gt;0?Math.round(words/minutes):0; }
+      function score(){ const attempts=correct+errors; e.stars.textContent=`Live score ${points} / ${goal}`; e.accuracy.textContent=`Accuracy ${attempts?Math.round(correct/attempts*100):&#x27;—&#x27;}%`; e.wpm.hidden=level!==lessons.length-1; if(level===lessons.length-1)e.wpm.textContent=`WPM ${currentWpm()}`; }
+      function renderQuestProgress(){ const chapterProgress=Math.max(0,Math.min(100,goal?points/goal*100:0)); const elapsed=roundDuration?((roundDuration-timeLeft)/roundDuration*100):0; const timeProgress=Math.max(0,Math.min(100,elapsed)); const pace=chapterProgress-elapsed; const failed=done&amp;&amp;points&lt;goal; const completed=done&amp;&amp;points&gt;=goal; const color=failed?&#x27;red&#x27;:completed?&#x27;green&#x27;:waitingToStart?&#x27;green&#x27;:(pace&gt;=-20?&#x27;green&#x27;:pace&gt;=-40?&#x27;yellow&#x27;:&#x27;red&#x27;); const timeColor=timeProgress&lt;50?&#x27;green&#x27;:timeProgress&lt;80?&#x27;yellow&#x27;:&#x27;red&#x27;; e.questFill.style.width=`${chapterProgress}%`; e.questFill.className=`progress-fill ${color}`; e.timeFill.style.width=`${timeProgress}%`; e.timeFill.className=`progress-fill ${timeColor}`; e.questPercent.textContent=`${Math.round(chapterProgress)}% complete`; e.timePercent.textContent=`${roundDuration-timeLeft}s used`; e.roundPercent.textContent=`${Math.round(chapterProgress)}% of chapter goal`; e.pace.textContent=failed?&#x27;Pace: time expired&#x27;:completed?&#x27;Pace: chapter complete&#x27;:waitingToStart?&#x27;Pace: ready to start&#x27;:`Pace: ${color===&#x27;green&#x27;?&#x27;on track&#x27;:color===&#x27;yellow&#x27;?&#x27;needs focus&#x27;:&#x27;behind target&#x27;}`; }
+      function renderHistory(){ e.history.innerHTML=history.map(item=&gt;`&lt;span class=&quot;${item.good?&#x27;good&#x27;:&#x27;bad&#x27;}&quot;&gt;${item.char===&#x27; &#x27;?&#x27;␣&#x27;:item.char}&lt;/span&gt;`).join(&#x27;&#x27;); }
+      function render(){ const lesson=lessons[level], current=practice(); e[&#x27;chapter-title&#x27;].textContent=`Chapter ${level+1} · ${lesson.name}`; e[&#x27;chapter-subtitle&#x27;].textContent=current.copy; e.mission.textContent=isDrop()?`Catch targets · reach ${goal} points`:`Copy the text · reach ${goal} points`; e.tip.textContent=isDrop()?&#x27;Correct +2 · missed or wrong −1&#x27;:&#x27;Correct +1 · wrong −1 · spaces, capitals, and punctuation count&#x27;; e.arena.classList.toggle(&#x27;word-mode&#x27;,!isDrop()); e.progress.textContent=isDrop()?`${dropCount} / 8 caught`:`${typed.length} / ${text.length}`; tokens(); renderHistory(); score(); renderQuestProgress(); }
+      function mistake(message,char){ errors++; points--; history.push({char:char||&#x27;×&#x27;,good:false}); e.instruction.textContent=message; score(); }
+      function nextDrop(){ if(done) return; falling=pick(); const lane=15+Math.random()*70; e.arena.innerHTML=&#x27;&lt;div class=&quot;drop &#x27;+(falling.length&gt;1?&#x27;group&#x27;:&#x27;&#x27;)+&#x27;&quot;&gt;&lt;/div&gt;&#x27;; e.arena.firstChild.textContent=falling; e.arena.firstChild.style.left=`${lane}%`; e.progress.textContent=`${dropCount} / 8 caught`; dropTimer=setTimeout(()=&gt;{ mistake(&#x27;It landed — one point lost.&#x27;,falling); nextDrop(); },4500); }
+      function textLesson(){ e.arena.innerHTML=&#x27;&#x27;; e.arena.appendChild(e.target); }
+      function showSummary(passed){ const attempts=correct+errors; const accuracy=attempts?Math.round(correct/attempts*100):0; const used=roundDuration-timeLeft; const summit=level===lessons.length-1; e.summaryTitle.textContent=summit?(passed?&#x27;Story Summit: Pass!&#x27;:&#x27;Story Summit: Try again&#x27;):passed?`Chapter ${level+1} complete!`:`Chapter ${level+1} needs another try`; e.summaryStats.textContent=`Score ${points} · Accuracy ${accuracy}% · Time used ${used}s${summit?` · WPM ${currentWpm()}`:&#x27;&#x27;}`; e.next.hidden=!passed||summit; e.summary.classList.add(&#x27;show&#x27;); }
+      function finish(timedOut=false){ done=true; clearTimeout(dropTimer); clearInterval(roundTimer); const accuracy=(correct+errors)?Math.round(correct/(correct+errors)*100):0; const summit=level===lessons.length-1; const passed=points&gt;=goal&amp;&amp;(!summit||accuracy&gt;=85); if(passed&amp;&amp;level&lt;lessons.length-1){unlocked=Math.max(unlocked,level+1); e.celebrate.textContent=&#x27;Level complete! Review your results, then continue when ready.&#x27;;} else if(passed){questDone=true; e.celebrate.textContent=&#x27;Story Summit passed! You completed the quest.&#x27;;} else e.celebrate.textContent=summit?`Story Summit needs ${goal} points and 85% accuracy. You scored ${points} points with ${accuracy}% accuracy.`:`${timedOut?&#x27;Time is up.&#x27;:&#x27;Round complete.&#x27;} You need ${goal} points; you scored ${points}.`; e.celebrate.classList.add(&#x27;show&#x27;); e.retry.hidden=passed; e.input.disabled=true; e.instruction.textContent=passed?&#x27;Choose Continue to open the next chapter.&#x27;:&#x27;Retry this level to unlock the next chapter.&#x27;; showSummary(passed); map(); render(); }
+      function startTimer(){ clearInterval(roundTimer); roundTimer=setInterval(()=&gt;{ if(done) return; timeLeft--; score(); renderQuestProgress(); if(timeLeft&lt;=0) finish(true); },1000); }
+      function beginLevel(){ waitingToStart=false; roundStarted=Date.now(); e.start.hidden=true; e.celebrate.classList.remove(&#x27;show&#x27;); e.input.disabled=false; e.instruction.textContent=isDrop()?&#x27;Catch the target before it lands.&#x27;:&#x27;Match each character in order.&#x27;; if(isDrop()) nextDrop(); else textLesson(); render(); startTimer(); e.input.focus(); }
+      function load(i,wait=false){ clearTimeout(dropTimer); clearInterval(roundTimer); level=i; done=false; questDone=false; waitingToStart=wait; typed=&#x27;&#x27;; errors=0; correct=0; points=0; dropCount=0; history=[]; wrongPositions=new Set(); const current=practice(); const baseText=typeof current.text===&#x27;object&#x27;?current.text[e.difficulty.value.toLowerCase()]:current.text||&#x27;&#x27;; text=level===2?`${baseText} ${baseText}`:level===3?`${baseText} I breathe, focus, and keep a steady rhythm.`:level===4?`${baseText} Every word helps me become a stronger, calmer, and more confident typist.`:baseText; const base=[35,35,75,105,150][level]; const multiplier={Easy:1.4,Medium:1,Hard:.7}[e.difficulty.value]; timeLeft=Math.round(base*multiplier); roundDuration=timeLeft; goal=isDrop()?10:Math.max(8,Math.ceil(text.length*.6)); e.session.innerHTML=lessons[level].sessions.map((item,index)=&gt;`&lt;option value=&quot;${index}&quot;&gt;${index+1}. ${item.label}&lt;/option&gt;`).join(&#x27;&#x27;); e.session.value=session; e.input.value=&#x27;&#x27;; e.input.disabled=wait; e.celebrate.classList.remove(&#x27;show&#x27;); e.summary.classList.remove(&#x27;show&#x27;); e.retry.hidden=true; e.start.hidden=!wait; e.start.textContent=&#x27;Start&#x27;; e.instruction.textContent=wait?&#x27;Press Start when you are ready.&#x27;:(isDrop()?&#x27;Catch the target before it lands.&#x27;:&#x27;Match each character in order.&#x27;); map(); if(!isDrop()) textLesson(); else if(wait) e.arena.innerHTML=&#x27;&#x27;; render(); if(!wait) beginLevel(); }
+      function checkAnswer(value){ if(done) return; if(isDrop()){ const answer=value.toLowerCase(); const target=falling.toLowerCase(); if(target.startsWith(answer)){ e.instruction.textContent=&#x27;Good — finish the target!&#x27;; if(answer===target){ clearTimeout(dropTimer); correct+=falling.length; points+=2; history.push({char:answer,good:true}); dropCount++; e.input.value=&#x27;&#x27;; e.instruction.textContent=&#x27;Nice catch! +2 points&#x27;; if(dropCount&gt;=8) finish(); else nextDrop(); } } else { e.input.value=&#x27;&#x27;; mistake(&#x27;Wrong target — one point lost.&#x27;,answer); } score(); render(); return; } if(text.startsWith(value)){ const previous=typed.length; typed=value; correct=typed.length; if(typed.length&gt;previous) history.push(...[...typed.slice(previous)].map(char=&gt;({char,good:true}))); points+=typed.length-previous; e.instruction.textContent=&#x27;Keep going.&#x27;; if(typed.length===text.length) finish(); else render(); } else { const wrong=value.slice(-1); wrongPositions.add(typed.length); e.input.value=typed; mistake(`Next: ${text[typed.length]===&#x27; &#x27;?&#x27;space&#x27;:text[typed.length]}`,wrong); render(); } }
+      e.input.addEventListener(&#x27;keydown&#x27;,(event)=&gt;{ if(event.key===&#x27;Backspace&#x27;){ event.preventDefault(); e.input.value=e.input.value.slice(0,-1); if(!isDrop()) typed=e.input.value; render(); return; } const character=(event.code===&#x27;Space&#x27;||event.key===&#x27;Spacebar&#x27;)?&#x27; &#x27;:event.key; if(character.length!==1) return; event.preventDefault(); e.input.value+=character; checkAnswer(e.input.value); });
+      e.input.addEventListener(&#x27;input&#x27;,()=&gt;checkAnswer(e.input.value));
+      e.start.addEventListener(&#x27;click&#x27;,beginLevel);
+      e.retry.addEventListener(&#x27;click&#x27;,()=&gt;load(level,true));
+      e.next.addEventListener(&#x27;click&#x27;,()=&gt;load(level+1,true));
+      e.session.addEventListener(&#x27;change&#x27;,()=&gt;{session=Number(e.session.value);load(level,true)});
+      e.difficulty.addEventListener(&#x27;change&#x27;,()=&gt;load(level,true));
+      load(0,true);
+    })();
+  &lt;/script&gt;
+&lt;/div&gt;
+
+&lt;script src=&quot;https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set([&quot;top&quot;, &quot;right&quot;, &quot;bottom&quot;, &quot;left&quot;]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+
+  const getTrigger = (target) =&gt;
+    target?.nodeType === Node.ELEMENT_NODE
+      ? target.closest(&quot;[data-tooltip]&quot;)
+      : null;
+  const containsTarget = (trigger, target) =&gt;
+    target?.nodeType != null &amp;&amp; trigger.contains(target);
+  const getContent = (trigger) =&gt;
+    trigger.getAttribute(&quot;data-tooltip&quot;)?.trim() ?? &quot;&quot;;
+  const getPlacement = (trigger) =&gt; {
+    const placement = trigger.getAttribute(&quot;data-tooltip-placement&quot;);
+    return tooltipPlacements.has(placement) ? placement : &quot;top&quot;;
+  };
+  const getTooltip = () =&gt; {
+    if (tooltip == null) {
+      tooltip = document.createElement(&quot;div&quot;);
+      tooltip.id = tooltipId;
+      tooltip.className = &quot;tooltip&quot;;
+      tooltip.setAttribute(&quot;role&quot;, &quot;tooltip&quot;);
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) =&gt; {
+    const ids = new Set(
+      (trigger.getAttribute(&quot;aria-describedby&quot;) ?? &quot;&quot;)
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute(&quot;aria-describedby&quot;);
+    } else {
+      trigger.setAttribute(&quot;aria-describedby&quot;, [...ids].join(&quot; &quot;));
+    }
+  };
+  const clearOpenTimeout = () =&gt; {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) =&gt; {
+    clearOpenTimeout();
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) =&gt; {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-width&quot;,
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-height&quot;,
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: &quot;fixed&quot;,
+    })
+      .then(({ x, y }) =&gt; {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = &quot;visible&quot;;
+      })
+      .catch(() =&gt; {
+        if (activeTrigger === trigger &amp;&amp; request === positionRequest) {
+          closeTooltip(false);
+        }
       });
+  };
+  const openTooltip = (trigger) =&gt; {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
     }
-
-    function setWord(text) {
-      currentWord = text;
-      wordEl.textContent = text;
-      wordEl.classList.remove('correct', 'wiggle');
-      wordEl.classList.add('pop');
-      setTimeout(() => wordEl.classList.remove('pop'), 400);
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
     }
-
-    function startTimer() {
-      clearInterval(timerId);
-      timerId = setInterval(() => {
-        timeLeft -= 1;
-        timeStat.textContent = `Time: ${timeLeft}s`;
-        if (timeLeft <= 0) {
-          endLevel(false);
-        }
-      }, 1000);
-    }
-
-    function startLevel() {
-      const level = levels[levelIndex];
-      hitsThisLevel = 0;
-      timeLeft = level.time;
-      updateStats();
-      setWord(pickRandom(level.words));
-      answerEl.value = '';
-      answerEl.focus();
-      startTimer();
-    }
-
-    function nextPrompt(correct) {
-      const level = levels[levelIndex];
-      // Add tiny celebration or wiggle based on correctness
-      if (correct) {
-        wordEl.classList.add('correct');
-        setTimeout(() => wordEl.classList.remove('correct'), 450);
-      } else {
-        wordEl.classList.add('wiggle');
-        setTimeout(() => wordEl.classList.remove('wiggle'), 450);
-      }
-      setTimeout(() => setWord(pickRandom(level.words)), 250);
-    }
-
-    function endLevel(fromGoal = true) {
-      clearInterval(timerId);
-      timerId = null;
-      overlay.classList.add('show');
-
-      const finalLevel = levelIndex === levels.length - 1;
-      const won = fromGoal || hitsThisLevel >= levels[levelIndex].goal;
-
-      if (finalLevel && won) {
-        overlayTitle.textContent = 'Typing Expert!';
-        overlayBody.innerHTML = 'You finished every level. That is super star typing!';
-        nextBtn.textContent = 'Play Again';
-        nextBtn.onclick = resetGame;
-      } else {
-        overlayTitle.textContent = won ? 'Level Complete!' : 'Time Up!';
-        overlayBody.textContent = won ? 'Nice typing. Ready for the next challenge?' : 'You can do it! Try the level again.';
-        nextBtn.textContent = won ? 'Next Level' : 'Retry Level';
-        nextBtn.onclick = () => {
-          overlay.classList.remove('show');
-          if (won && !finalLevel) {
-            levelIndex += 1;
-          }
-          startLevel();
-        };
-      }
-
-      overlayScore.textContent = `Score: ${score}`;
-    }
-
-    function handleInput() {
-      const level = levels[levelIndex];
-      const typedRaw = answerEl.value;
-      if (!typedRaw) return;
-
-      const typed = typedRaw.trim();
-      const targetWord = currentWord.trim();
-      // Only evaluate after the player types the final letter of the prompt.
-      // This prevents longer words (levels 4+) from swapping out the moment a
-      // single letter is entered—for example when mobile keyboards try to
-      // autocomplete after the first keystroke.
-      const hasTypedEnough = typed.length >= targetWord.length;
-      const finishedWord =
-        typed.slice(-1).toLowerCase() === targetWord.slice(-1).toLowerCase();
-      if (!hasTypedEnough || !finishedWord) {
-        return;
-      }
-
-      if (typed.toLowerCase() === currentWord.toLowerCase()) {
-        // Correct entry
-        score += 10;
-        hitsThisLevel += 1;
-        answerEl.value = '';
-        updateStats();
-        nextPrompt(true);
-
-        if (hitsThisLevel >= level.goal) {
-          endLevel(true);
-        }
-      } else {
-        answerEl.value = '';
-        nextPrompt(false);
-      }
-    }
-
-    function resetGame() {
-      overlay.classList.remove('show');
-      levelIndex = 0;
-      score = 0;
-      startLevel();
-    }
-
-    // --- UI wiring ----------------------------------------------------------------
-    startBtn.addEventListener('click', () => {
-      overlay.classList.remove('show');
-      startLevel();
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = &quot;hidden&quot;;
+    floating.style.transform = &quot;translate(0, 0)&quot;;
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () =&gt; {
+      updatePosition(trigger, floating);
     });
-
-    answerEl.addEventListener('input', handleInput);
-
-    // Add background bubbles for a playful feel
-    function spawnBubbles() {
-      for (let i = 0; i < 12; i += 1) {
-        const bubble = document.createElement('span');
-        const size = Math.random() * 80 + 20;
-        bubble.style.width = `${size}px`;
-        bubble.style.height = `${size}px`;
-        bubble.style.left = `${Math.random() * 100}%`;
-        bubble.style.top = `${Math.random() * 100}%`;
-        bubble.style.background = `hsla(${Math.random() * 360}, 80%, 70%, 0.6)`;
-        bubble.style.animationDelay = `${Math.random() * 6}s`;
-        bubbles.appendChild(bubble);
-      }
+  };
+  const requestOpen = (trigger, immediate = false) =&gt; {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
     }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() &lt; skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() =&gt; {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) =&gt; {
+    if (event.pointerType === &quot;touch&quot;) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handleLeave = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger?.matches(&quot;:focus-visible&quot;)) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) =&gt; {
+    if (event.key === &quot;Escape&quot;) {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const destroy = () =&gt; {
+    closeTooltip(false);
+    document.removeEventListener(&quot;pointerover&quot;, handlePointerOpen);
+    document.removeEventListener(&quot;pointerout&quot;, handleLeave);
+    document.removeEventListener(&quot;focusin&quot;, handleFocusIn);
+    document.removeEventListener(&quot;focusout&quot;, handleLeave);
+    document.removeEventListener(&quot;keydown&quot;, handleKeyDown);
+    document.removeEventListener(&quot;contextmenu&quot;, handleContextMenu);
+    tooltip = null;
+  };
 
-    spawnBubbles();
-    updateStats();
-  </script>
+  document.addEventListener(&quot;pointerover&quot;, handlePointerOpen);
+  document.addEventListener(&quot;pointerout&quot;, handleLeave);
+  document.addEventListener(&quot;focusin&quot;, handleFocusIn);
+  document.addEventListener(&quot;focusout&quot;, handleLeave);
+  document.addEventListener(&quot;keydown&quot;, handleKeyDown);
+  document.addEventListener(&quot;contextmenu&quot;, handleContextMenu);
+  window.addEventListener(&quot;pagehide&quot;, destroy, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-lucide&quot; async src=&quot;https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  const initialize = () =&gt; {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById(&quot;codex-visualization-lucide&quot;)
+    ?.addEventListener(&quot;load&quot;, initialize, { once: true });
+})();
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
 </body>
 </html>
